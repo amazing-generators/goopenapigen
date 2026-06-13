@@ -1,0 +1,11 @@
+openapi: 3.0.3
+
+# Root envelope document. paths/components are assembled from folders,
+# and root array fields come from same-named sidecar files.
+
+info:
+  title: Tasks API
+  version: 1.3.0
+  description: |
+    Small hand-written API used as the goopenapigen example. paths/ and components/ are merged
+    by folder convention, so the root stays a thin envelope and nothing is wired by hand.

@@ -1,0 +1,7 @@
+description: Comments for a task.
+content:
+  application/json:
+    schema:
+      type: array
+      items:
+        $ref: schemas/comment

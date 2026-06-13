@@ -1,0 +1,17 @@
+type: object
+required: [ error, message ]
+properties:
+  error:
+    type: string
+    description: Machine-readable error code.
+    example: invalid_request
+  message:
+    type: string
+    description: Human-readable message.
+  requestId:
+    type: string
+    description: Request correlation id.
+  details:
+    type: array
+    items:
+      type: string

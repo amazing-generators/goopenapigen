@@ -1,0 +1,31 @@
+type: object
+required: [ id, actor, action, target, createdAt ]
+properties:
+  id:
+    type: string
+    format: uuid
+  actor:
+    $ref: schemas/user_summary
+  action:
+    type: string
+    enum: [ created, updated, deleted, commented ]
+  target:
+    type: object
+    required: [ type, id ]
+    properties:
+      type:
+        type: string
+        enum: [ task, project, comment ]
+      id:
+        type: string
+        format: uuid
+  changes:
+    type: object
+    additionalProperties:
+      type: object
+      properties:
+        before: { }
+        after: { }
+  createdAt:
+    type: string
+    format: date-time

@@ -1,0 +1,14 @@
+{{ .Header }}
+package {{ .PackageName }}
+
+const (
+Name string = {{ quote .Name }}
+
+Version      string = {{ quote .Version }}
+VersionMajor uint16 = {{ .VersionMajor }}
+VersionMinor uint16 = {{ .VersionMinor }}
+VersionPatch uint16 = {{ .VersionPatch }}
+
+Hash        string = {{ quote .Hash }}
+DateUpdate  string = {{ quote .DateUpdate }}
+)

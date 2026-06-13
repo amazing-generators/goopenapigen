@@ -1,0 +1,28 @@
+{{ .Header }}
+package {{ .PackageName }}
+
+import (
+"bytes"
+"compress/flate"
+"io"
+"sync"
+)
+
+// // // // // // // // // //
+
+var openAPIJSONCompressedArr = []byte{
+{{ .CompressedJSONLiteral -}}
+}
+
+var openAPIJSONFunc = sync.OnceValues(func() ([]byte, error) {
+readerObj := flate.NewReader(bytes.NewReader(openAPIJSONCompressedArr))
+defer func() {
+_ = readerObj.Close()
+}()
+
+return io.ReadAll(readerObj)
+})
+
+func OpenAPIJSON() ([]byte, error) {
+return openAPIJSONFunc()
+}

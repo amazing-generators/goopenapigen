@@ -1,0 +1,14 @@
+description: Activity events.
+content:
+  application/json:
+    schema:
+      type: object
+      required: [ items, nextCursor ]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: schemas/activity_event
+        nextCursor:
+          type: string
+          nullable: true

@@ -1,0 +1,15 @@
+type: object
+required: [ id, displayName ]
+properties:
+  id:
+    type: string
+    format: uuid
+  displayName:
+    type: string
+    minLength: 1
+  email:
+    type: string
+    format: email
+  avatarUrl:
+    type: string
+    format: uri

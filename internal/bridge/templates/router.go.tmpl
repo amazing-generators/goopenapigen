@@ -1,0 +1,73 @@
+{{ .Header }}
+package {{ .PackageName }}
+
+{{- if .ImportArr }}
+    import (
+    {{- range .ImportArr }}
+        {{ . }}
+    {{- end }}
+    )
+
+    // // // // // // // // // //
+
+{{- end }}
+var _ {{ .HandlerInterface }} = (*HandlerObj)(nil)
+{{- if .HasSecurity }}
+    var _ {{ .SecurityInterface }} = (*SecurityObj)(nil)
+{{- end }}
+
+{{ if .HasFuncInterface -}}
+    type FuncInterface interface {
+    {{- range .FuncMethodArr }}
+        {{ .Declaration }}
+    {{- end }}
+    }
+{{ end }}
+
+type HandlerObj struct {
+{{- if .HasFuncInterface }}
+    FuncObj FuncInterface
+{{- end }}
+}
+
+{{ if .HasSecurity }}
+    type SecurityObj struct {
+    {{- if .HasFuncInterface }}
+        FuncObj FuncInterface
+    {{- end }}
+    }
+{{ end }}
+
+func NewHandler({{ if .HasFuncInterface }}funcObj FuncInterface, {{ end }}optionsArr ...{{ .ServerOption }}) (http.Handler, error) {
+{{- if .HasFuncInterface }}
+    if funcObj == nil {
+    return nil, errors.New("func implementation is nil")
+    }
+    handlerObj := &HandlerObj{FuncObj: funcObj}
+{{- else }}
+    handlerObj := &HandlerObj{}
+{{- end }}
+{{- if .HasSecurity }}
+    {{- if .HasFuncInterface }}
+        securityObj := &SecurityObj{FuncObj: funcObj}
+    {{- else }}
+        securityObj := &SecurityObj{}
+    {{- end }}
+    return NewServer(handlerObj, securityObj, optionsArr...)
+{{- else }}
+    return NewServer(handlerObj, optionsArr...)
+{{- end }}
+}
+
+{{ range .HandlerMethodArr -}}
+    func ({{ .ReceiverName }} *{{ .ReceiverType }}) {{ .Name }}({{ .ParamSignature }}){{ if .ResultSignature }} {{ .ResultSignature }}{{ end }} {
+    {{ .Body -}}
+    }
+
+{{ end -}}
+{{ range .SecurityMethodArr -}}
+    func ({{ .ReceiverName }} *{{ .ReceiverType }}) {{ .Name }}({{ .ParamSignature }}){{ if .ResultSignature }} {{ .ResultSignature }}{{ end }} {
+    {{ .Body -}}
+    }
+
+{{ end -}}

@@ -1,0 +1,7 @@
+name: task_id
+in: path
+required: true
+description: Task identifier.
+schema:
+  type: string
+  format: uuid

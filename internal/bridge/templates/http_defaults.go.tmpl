@@ -1,0 +1,124 @@
+{{ .Header }}
+package {{ .PackageName }}
+
+import (
+"context"
+"encoding/json"
+"net/http"
+
+"github.com/ogen-go/ogen/ogenerrors"
+)
+
+// // // // // // // // // //
+
+const cDefaultOpenAPIJSONPath = "/openapi.json"
+
+{{ if .DefaultError.DeclareFallback -}}
+    type ErrorType struct {
+Error string `json:"error"`
+Message string `json:"message"`
+}
+
+{{ else if .DefaultError.DeclareAlias -}}
+    type ErrorType = {{ .DefaultError.AliasTargetName }}
+
+{{ end -}}
+func NewDefaultHandler({{ if .HasFuncInterface }}funcObj FuncInterface, {{ end }}optionsArr ...{{ .ServerOption }}) (http.Handler, error) {
+defaultOptionArr := []{{ .ServerOption }}{
+WithErrorHandler(defaultErrorHandler),
+WithNotFound(defaultNotFoundHandler),
+WithMethodNotAllowed(defaultMethodNotAllowedHandler),
+}
+defaultOptionArr = append(defaultOptionArr, optionsArr...)
+
+handlerObj, err := NewHandler({{ if .HasFuncInterface }}funcObj, {{ end }}defaultOptionArr...)
+if err != nil {
+return nil, err
+}
+
+{{- if .HasOpenAPIJSON }}
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    switch r.URL.Path {
+    case cDefaultOpenAPIJSONPath:
+    defaultOpenAPIJSONHandler(w, r)
+    return
+    default:
+    handlerObj.ServeHTTP(w, r)
+    }
+    }), nil
+{{- else }}
+    return handlerObj, nil
+{{- end }}
+}
+
+{{ if .HasOpenAPIJSON -}}
+    func defaultOpenAPIJSONHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet && r.Method != http.MethodHead {
+    w.Header().Set("Allow", "GET, HEAD")
+    defaultWriteJSONError(w, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
+    return
+    }
+
+    dataArr, err := OpenAPIJSON()
+    if err != nil {
+    defaultWriteJSONError(w, http.StatusInternalServerError, "OpenAPI JSON is unavailable")
+    return
+    }
+
+    w.Header().Set("Content-Type", "application/json; charset=utf-8")
+    w.WriteHeader(http.StatusOK)
+    if r.Method == http.MethodHead {
+    return
+    }
+
+    _, _ = w.Write(dataArr)
+    }
+
+{{ end -}}
+func defaultErrorHandler(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) {
+_ = ctx
+_ = r
+
+statusCode := http.StatusInternalServerError
+messageText := http.StatusText(statusCode)
+if err != nil {
+statusCode = ogenerrors.ErrorCode(err)
+messageText = err.Error()
+}
+
+defaultWriteJSONError(w, statusCode, messageText)
+}
+
+func defaultNotFoundHandler(w http.ResponseWriter, r *http.Request) {
+_ = r
+defaultWriteJSONError(w, http.StatusNotFound, http.StatusText(http.StatusNotFound))
+}
+
+func defaultMethodNotAllowedHandler(w http.ResponseWriter, r *http.Request, allowed string) {
+if r.Method == http.MethodOptions {
+w.WriteHeader(http.StatusNoContent)
+return
+}
+
+if allowed != "" {
+w.Header().Set("Allow", allowed)
+}
+
+defaultWriteJSONError(w, http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
+}
+
+func defaultWriteJSONError(w http.ResponseWriter, statusCode int, messageText string) {
+if statusCode < http.StatusBadRequest || statusCode > 599 {
+statusCode = http.StatusInternalServerError
+}
+if messageText == "" {
+messageText = http.StatusText(statusCode)
+}
+
+w.Header().Set("Content-Type", "application/json; charset=utf-8")
+w.WriteHeader(statusCode)
+_ = json.NewEncoder(w).Encode({{ .DefaultError.TypeName }}{
+{{ .DefaultError.StatusFieldName }}: {{ .DefaultError.StatusValue }},
+{{ .DefaultError.MessageField }}: messageText,
+})
+}

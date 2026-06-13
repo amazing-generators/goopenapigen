@@ -1,0 +1,9 @@
+- url: https://{region}.api.example.com/{basePath}
+  variables:
+    region:
+      default: eu
+      enum: [ eu, us ]
+      description: Deployment region.
+    basePath:
+      default: v1
+      description: API base path.

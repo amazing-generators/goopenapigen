@@ -1,0 +1,7 @@
+name: project_id
+in: path
+required: true
+description: Project identifier.
+schema:
+  type: string
+  format: uuid

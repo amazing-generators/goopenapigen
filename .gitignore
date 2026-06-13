@@ -1,0 +1,7 @@
+/target/
+/tmp/
+/dist/
+*.bin
+*.exe
+.env
+go.sum

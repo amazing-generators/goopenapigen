@@ -1,0 +1,17 @@
+# The file provides its own URL key and is merged into the assembled document paths.
+# Internal $ref values ('#/...') resolve against the assembled document, not this file.
+
+/health:
+  get:
+    operationId: healthGet
+    summary: Liveness probe.
+    tags: [ system ]
+    x-func: HealthGet
+    security: [ ] # Public endpoint.
+    responses:
+      '200':
+        description: Service status.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Status'

@@ -1,0 +1,20 @@
+get:
+  operationId: projectActivityList
+  summary: List project activity events.
+  tags: [ projects, activity ]
+  x-func: ProjectActivityList
+  security:
+    - ApiKeyHeader: [ ]
+  parameters:
+    - $ref: parameters/project_id
+    - name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+    - $ref: '#/components/parameters/Limit'
+  responses:
+    '200':
+      $ref: responses/activity_event_list
+    default:
+      $ref: '#/components/responses/Problem'

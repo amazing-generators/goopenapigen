@@ -1,0 +1,2 @@
+# Global security: Bearer is required by default. BearerAuth comes from components/auth.yaml.
+- BearerAuth: [ ]

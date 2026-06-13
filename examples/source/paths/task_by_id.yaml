@@ -1,0 +1,27 @@
+/tasks/{task_id}:
+  parameters:
+    - $ref: parameters/task_id
+  get:
+    operationId: taskGet
+    summary: Get a task by id.
+    tags: [ tasks ]
+    x-func: TaskGet
+    responses:
+      '200':
+        description: The task.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+      default:
+        $ref: '#/components/responses/Problem'
+  delete:
+    operationId: taskDelete
+    summary: Delete a task.
+    tags: [ tasks ]
+    # x-func is intentionally missing to demonstrate the not implemented stub and -require-x-func.
+    responses:
+      '204':
+        description: Deleted.
+      default:
+        $ref: '#/components/responses/Problem'
