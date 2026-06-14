@@ -136,81 +136,28 @@ jobs:
           set -Eeuo pipefail
           mkdir -p dist
 
-          # format: GOOS/GOARCH[/variant]
+          # format: GOOS/GOARCH
           targets=(
             windows/amd64
             windows/arm64
-            windows/arm/7
-            windows/386
             linux/amd64
             linux/arm64
-            linux/arm/7
-            linux/arm/6
-            linux/386
-            linux/mips/softfloat
-            linux/mipsle/softfloat
-            linux/mips64
-            linux/mips64le
-            linux/ppc64
-            linux/ppc64le
-            linux/riscv64
-            linux/s390x
             darwin/amd64
             darwin/arm64
-            freebsd/amd64
-            freebsd/arm64
-            freebsd/arm/6
-            freebsd/arm/7
-            freebsd/386
-            openbsd/amd64
-            openbsd/arm64
-            openbsd/arm/6
-            openbsd/arm/7
-            openbsd/386
-            netbsd/amd64
-            netbsd/arm64
-            netbsd/arm/6
-            netbsd/arm/7
-            netbsd/386
-            android/amd64
-            android/arm64
-            android/arm/7
-            android/386
           )
 
-          NDK_BIN="${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          ANDROID_API=21
-
           for target in "${targets[@]}"; do
-            IFS='/' read -r os arch variant <<< "$target"
+            IFS='/' read -r os arch <<< "$target"
 
             export GOOS="$os"
             export GOARCH="$arch"
             export CGO_ENABLED=0
-            unset GOARM GOMIPS CC
 
             suffix=""
             tag="${os}-${arch}"
 
             if [[ "$os" == "windows" ]]; then
               suffix=".exe"
-            fi
-
-            if [[ "$arch" == "arm" && -n "$variant" ]]; then
-              export GOARM="$variant"
-              tag="${os}-armv${variant}"
-            elif [[ ("$arch" == "mips" || "$arch" == "mipsle") && -n "$variant" ]]; then
-              export GOMIPS="$variant"
-            fi
-
-            # android non-arm64 requires CGO via the Android NDK toolchain
-            if [[ "$os" == "android" && "$arch" != "arm64" ]]; then
-              export CGO_ENABLED=1
-              case "$arch" in
-                amd64) export CC="${NDK_BIN}/x86_64-linux-android${ANDROID_API}-clang" ;;
-                arm)   export CC="${NDK_BIN}/armv7a-linux-androideabi${ANDROID_API}-clang" ;;
-                386)   export CC="${NDK_BIN}/i686-linux-android${ANDROID_API}-clang" ;;
-              esac
             fi
 
             outname="${BUILD_NAME}-${tag}${suffix}"
