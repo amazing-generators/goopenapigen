@@ -88,7 +88,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          new_ver=$(go run ./cmd/goopenapigen version minor -source ./_run/values.yml)
+          new_ver=$(go run github.com/amazing-generators/gometagen/cmd/gometagen@latest version minor -source ./_run/values.yml)
           echo "New version: $new_ver"
 
           git add _run/values.yml
