@@ -528,10 +528,15 @@ The `json` and `meta` commands share the relevant subset of these flags.
 goopenapigen manifest sync -source ./api -create                 # create meta.yml
 goopenapigen manifest sync -source ./api -create -format json    # create meta.json
 goopenapigen manifest sync -source ./api -bump patch             # bump version, refresh hash
+goopenapigen manifest sync -source ./api -auto-bump patch        # bump only when source hash changed
+goopenapigen manifest sync -source ./api -auto-bump prepatch -preid rc
 goopenapigen manifest sync -source ./api -bump prerelease -preid rc
 ```
 
-`-source` must be a directory. Sync refreshes `hash`, preserves `ver` unless `-bump` is set, and never writes `name`.
+`-source` must be a directory. Sync refreshes `hash`, preserves `ver` unless `-bump` is set or `-auto-bump` detects a
+source hash change, and never writes `name`.
+`-bump` and `-auto-bump` accept `major`, `minor`, `patch`, `premajor`, `preminor`, `prepatch`, and `prerelease`.
+`-auto-bump` applies the bump only when the manifest hash differs from the current source hash.
 
 ### `version`
 

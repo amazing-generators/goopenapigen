@@ -47,6 +47,7 @@ type ConfigObj struct {
 	ManifestCreate bool
 	ManifestFormat string
 	Bump           string
+	AutoBump       string
 	PreID          string
 
 	RequireXFunc                  bool
