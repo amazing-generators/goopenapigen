@@ -110,6 +110,172 @@ hash: old
 	}
 }
 
+func TestRunManifestSyncAutoBumpOnlyWhenHashChanged(t *testing.T) {
+	rootPath := t.TempDir()
+	writeRunTestSource(t, rootPath)
+
+	_, err := Run(ConfigObj{
+		Command:        CommandManifestSync,
+		Source:         rootPath,
+		ManifestCreate: true,
+		ManifestFormat: "yaml",
+	})
+	if err != nil {
+		t.Fatalf("create manifest: %v", err)
+	}
+
+	_, err = Run(ConfigObj{
+		Command:  CommandManifestSync,
+		Source:   rootPath,
+		AutoBump: "patch",
+	})
+	if err != nil {
+		t.Fatalf("run manifest auto-bump without changes: %v", err)
+	}
+
+	dataArr, err := os.ReadFile(filepath.Join(rootPath, "meta.yml"))
+	if err != nil {
+		t.Fatalf("read unchanged manifest: %v", err)
+	}
+	if !strings.Contains(string(dataArr), "ver: 1.2.3") {
+		t.Fatalf("auto-bump changed version without source changes: %s", string(dataArr))
+	}
+
+	_, err = Run(ConfigObj{
+		Command:  CommandManifestSync,
+		Source:   rootPath,
+		AutoBump: "unknown",
+	})
+	if err == nil || !strings.Contains(err.Error(), "unsupported version bump: unknown") {
+		t.Fatalf("expected invalid auto-bump error, got %v", err)
+	}
+
+	writeRunTestFile(t, rootPath, "paths/test.yml", `
+/test:
+  get:
+    operationId: testGet
+    x-func: TestGet
+    responses:
+      "200":
+        description: Changed
+`)
+
+	_, err = Run(ConfigObj{
+		Command:  CommandManifestSync,
+		Source:   rootPath,
+		AutoBump: "patch",
+	})
+	if err != nil {
+		t.Fatalf("run manifest auto-bump after source changes: %v", err)
+	}
+
+	dataArr, err = os.ReadFile(filepath.Join(rootPath, "meta.yml"))
+	if err != nil {
+		t.Fatalf("read bumped manifest: %v", err)
+	}
+	if !strings.Contains(string(dataArr), "ver: 1.2.4") {
+		t.Fatalf("auto-bump did not bump changed source version: %s", string(dataArr))
+	}
+}
+
+func TestRunManifestSyncRejectsBumpWithAutoBump(t *testing.T) {
+	rootPath := t.TempDir()
+	writeRunTestSource(t, rootPath)
+	writeRunTestFile(t, rootPath, "meta.yml", `
+ver: 1.2.3
+hash: old
+`)
+
+	_, err := Run(ConfigObj{
+		Command:  CommandManifestSync,
+		Source:   rootPath,
+		Bump:     "patch",
+		AutoBump: "patch",
+	})
+	if err == nil || !strings.Contains(err.Error(), "cannot use -bump and -auto-bump together") {
+		t.Fatalf("expected bump conflict error, got %v", err)
+	}
+}
+
+func TestRunManifestSyncCreateValidatesBumpFlags(t *testing.T) {
+	t.Run("invalid auto-bump", func(t *testing.T) {
+		rootPath := t.TempDir()
+		writeRunTestSource(t, rootPath)
+
+		_, err := Run(ConfigObj{
+			Command:        CommandManifestSync,
+			Source:         rootPath,
+			ManifestCreate: true,
+			AutoBump:       "unknown",
+		})
+		if err == nil || !strings.Contains(err.Error(), "unsupported version bump: unknown") {
+			t.Fatalf("expected invalid auto-bump error, got %v", err)
+		}
+	})
+
+	t.Run("bump conflict", func(t *testing.T) {
+		rootPath := t.TempDir()
+		writeRunTestSource(t, rootPath)
+
+		_, err := Run(ConfigObj{
+			Command:        CommandManifestSync,
+			Source:         rootPath,
+			ManifestCreate: true,
+			Bump:           "patch",
+			AutoBump:       "patch",
+		})
+		if err == nil || !strings.Contains(err.Error(), "cannot use -bump and -auto-bump together") {
+			t.Fatalf("expected bump conflict error, got %v", err)
+		}
+	})
+}
+
+func TestRunManifestSyncAutoBumpSupportsVersionKinds(t *testing.T) {
+	caseArr := []struct {
+		name     string
+		bump     string
+		preID    string
+		expected string
+	}{
+		{name: "major", bump: "major", expected: "ver: 2.0.0"},
+		{name: "minor", bump: "minor", expected: "ver: 1.3.0"},
+		{name: "patch", bump: "patch", expected: "ver: 1.2.4"},
+		{name: "premajor", bump: "premajor", preID: "rc", expected: "ver: 2.0.0-rc.0"},
+		{name: "preminor", bump: "preminor", preID: "rc", expected: "ver: 1.3.0-rc.0"},
+		{name: "prepatch", bump: "prepatch", preID: "rc", expected: "ver: 1.2.4-rc.0"},
+		{name: "prerelease", bump: "prerelease", preID: "rc", expected: "ver: 1.2.4-rc.0"},
+	}
+
+	for _, caseObj := range caseArr {
+		t.Run(caseObj.name, func(t *testing.T) {
+			rootPath := t.TempDir()
+			writeRunTestSource(t, rootPath)
+			writeRunTestFile(t, rootPath, "meta.yml", `
+ver: 1.2.3
+hash: old
+`)
+
+			_, err := Run(ConfigObj{
+				Command:  CommandManifestSync,
+				Source:   rootPath,
+				AutoBump: caseObj.bump,
+				PreID:    caseObj.preID,
+			})
+			if err != nil {
+				t.Fatalf("run manifest auto-bump %s: %v", caseObj.bump, err)
+			}
+
+			dataArr, err := os.ReadFile(filepath.Join(rootPath, "meta.yml"))
+			if err != nil {
+				t.Fatalf("read manifest: %v", err)
+			}
+			if !strings.Contains(string(dataArr), caseObj.expected) {
+				t.Fatalf("manifest does not contain %q:\n%s", caseObj.expected, string(dataArr))
+			}
+		})
+	}
+}
+
 func TestRunMetaGenerate(t *testing.T) {
 	rootPath := t.TempDir()
 	writeRunTestSource(t, rootPath)
